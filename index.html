@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kalkulator Waris Islami</title>
+  <!-- Menggunakan Tailwind CDN seperti proyek restoranmu -->
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-white shadow-xl rounded-2xl p-6 md:p-8 max-w-2xl w-full border border-gray-100">
+    <h1 class="text-2xl md:text-3xl font-bold text-emerald-700 text-center mb-2">Kalkulator Waris Faraidh</h1>
+    <p class="text-gray-500 text-sm text-center mb-8">Hitung pembagian harta waris secara akurat berdasarkan syariat Islam.</p>
+
+    <form id="formWaris" class="space-y-6">
+      
+      <!-- DATA JENAZAH & HARTA -->
+      <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-4">
+        <h2 class="font-semibold text-emerald-800 text-sm uppercase tracking-wider mb-2">1. Data Pewaris & Harta</h2>
+        
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Nama Almarhum / Almarhumah</label>
+          <input type="text" id="namaAlmarhum" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Jenis Kelamin Mayit</label>
+            <select id="jenisKelaminMayit" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="L">Laki-laki</option>
+              <option value="P">Perempuan</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Total Harta Kotor (Rp)</label>
+            <input type="number" id="hartaKotor" min="0" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Total Hutang Pewaris (Rp)</label>
+            <input type="number" id="hutang" min="0" value="0" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Biaya Pengurusan Jenazah / Makam (Rp)</label>
+            <input type="number" id="biayaMakam" min="0" value="0" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- STATUS KELUARGA INTI -->
+      <div class="bg-gray-50 p-4 rounded-xl border border-gray-200 space-y-4">
+        <h2 class="font-semibold text-gray-700 text-sm uppercase tracking-wider mb-2">2. Anggota Keluarga yang Hidup</h2>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label id="labelPasangan" class="block text-xs font-medium text-gray-600 mb-1">Apakah Istri Hidup?</label>
+            <select id="isSuamiIstriHidup" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="1">Ya</option>
+              <option value="0">Tidak</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Apakah Ayah Hidup?</label>
+            <select id="isAyahHidup" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="1">Ya</option>
+              <option value="0">Tidak</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Apakah Ibu Hidup?</label>
+            <select id="isIbuHidup" class="w-full p-2.5 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+              <option value="1">Ya</option>
+              <option value="0">Tidak</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Jumlah Anak Laki-laki</label>
+            <input type="number" id="jumlahAnakLk" min="0" value="0" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Jumlah Anak Perempuan</label>
+            <input type="number" id="jumlahAnakPr" min="0" value="0" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+          </div>
+        </div>
+      </div>
+
+      <!-- TOMBOL SUBMIT -->
+      <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors shadow-md">
+        Hitung Pembagian Waris
+      </button>
+
+    </form>
+
+    <!-- KOTAK HASIL PERHITUNGAN (Sembunyikan dulu menggunakan kelas 'hidden' jika data belum dihitung) -->
+    <div id="wrapperHasil" class="mt-12 bg-white rounded-2xl p-6 border-2 border-emerald-100 shadow-lg space-y-6 hidden">
+      <div class="flex items-center justify-between border-b border-gray-100 pb-4">
+        <div>
+          <h2 class="text-xl font-bold text-gray-800">Hasil Pembagian Faraidh</h2>
+          <p class="text-xs text-gray-500 mt-0.5">Detail distribusi nominal berdasarkan ketetapan syariat.</p>
+        </div>
+        <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full">Akurat</span>
+      </div>
+
+      <!-- RINGKASAN HARTA BERSIH -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+        <div>
+          <span class="block text-xs font-medium text-gray-500 uppercase">Nama Almarhum/ah</span>
+          <span id="resNamaAlmarhum" class="text-base font-semibold text-gray-800">-</span>
+        </div>
+        <div>
+          <span class="block text-xs font-medium text-gray-500 uppercase">Total Harta Bersih</span>
+          <span id="resHartaBersih" class="text-base font-bold text-emerald-600">Rp 0,00</span>
+        </div>
+      </div>
+
+      <!-- TABEL UTAMA AHLI WARIS -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-gray-600">
+          <thead class="bg-emerald-700 text-white text-xs uppercase tracking-wider">
+            <tr>
+              <th class="p-3 rounded-l-lg">Ahli Waris</th>
+              <th class="p-3 text-center">Jumlah</th>
+              <th class="p-3 text-center">Porsi Saham</th>
+              <th class="p-3 text-right">Per Orang</th>
+              <th class="p-3 text-right rounded-r-lg">Total Diterima</th>
+            </tr>
+          </thead>
+          <tbody id="tabelBodyHasil" class="divide-y divide-gray-100">
+            <!-- Data baris (row) hasil dari fetch C++ akan di-inject lewat JavaScript ke sini -->
+            <tr class="hover:bg-gray-50/70 transition-colors">
+              <td class="p-3 font-medium text-gray-800">Contoh: Istri</td>
+              <td class="p-3 text-center">1 orang</td>
+              <td class="p-3 text-center"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs">3 / 24</span></td>
+              <td class="p-3 text-right text-gray-700">Rp 12.500.000</td>
+              <td class="p-3 text-right font-semibold text-emerald-600">Rp 12.500.000</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <script src="waris_module.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

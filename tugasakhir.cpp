@@ -6,13 +6,18 @@
 #include <fstream> 
 #include <sstream>
 #include <cstdlib>
+#include <emscripten.h>
 using namespace std;
 const string NAMA_FILE = "data_waris.txt";
 
+#include <numeric> // Untuk std::gcd jika dibutuhkan
+
 struct HasilWaris {
     string nama;
-    double bagianPersen;
-    double nominal;
+    int jumlahOrang;
+    double bagianSaham;
+    double nominalPerOrang;
+    double nominalTotal;
     string catatan;
 };
 
@@ -130,7 +135,7 @@ void muatDatabase() {
 }
 
 void hitungDanTampilkan(DataKasus data) {
-    clearScreen(); 
+    clearScreen();
     cout << "\n==========================================" << endl;
     cout << "  DETAIL PERHITUNGAN: " << data.namaAlmarhum << endl;
     cout << "==========================================" << endl;
@@ -147,70 +152,124 @@ void hitungDanTampilkan(DataKasus data) {
         return;
     }
 
-    vector<HasilWaris> hasil;
-    double sisaHarta = hartaBersih;
     bool adaKeturunan = (data.jumlahAnakLk > 0 || data.jumlahAnakPr > 0);
+    int asalMasalah = 24;
+    int sahamSuamiIstri = 0;
+    int sahamIbu = 0;
+    int sahamAyah = 0;
+    int sahamAnakPr = 0;
+    string labelPasangan = "";
 
     if (data.isSuamiIstriHidup) {
-        double bagian = 0;
-        string status = "";
         if (data.jenisKelaminMayit == 'P' || data.jenisKelaminMayit == 'p') {
-            bagian = adaKeturunan ? 0.25 : 0.5;
-            status = adaKeturunan ? "Suami (1/4)" : "Suami (1/2)";
+            sahamSuamiIstri = adaKeturunan ? 6 : 12; // 1/4 atau 1/2 dari 24
+            labelPasangan = "Suami";
         } else {
-            bagian = adaKeturunan ? 0.125 : 0.25;
-            status = adaKeturunan ? "Istri (1/8)" : "Istri (1/4)";
+            sahamSuamiIstri = adaKeturunan ? 3 : 6; // 1/8 atau 1/4 dari 24
+            labelPasangan = "Istri";
         }
-        double nominal = hartaBersih * bagian;
-        hasil.push_back({status, bagian, nominal, ""});
-        sisaHarta -= nominal;
     }
 
     if (data.isIbuHidup) {
-        double bagian = adaKeturunan ? (1.0/6.0) : (1.0/3.0);
-        string status = adaKeturunan ? "Ibu (1/6)" : "Ibu (1/3)";
-        double nominal = hartaBersih * bagian;
-        hasil.push_back({status, bagian, nominal, ""});
-        sisaHarta -= nominal;
+        sahamIbu = adaKeturunan ? 4 : 8; // 1/6 atau 1/3 dari 24
     }
 
-    if (data.isAyahHidup && adaKeturunan) {
-        double bagian = 1.0/6.0;
-        double nominal = hartaBersih * bagian;
-        hasil.push_back({"Ayah (1/6 Pasti)", bagian, nominal, ""});
-        sisaHarta -= nominal;
+    if (data.isAyahHidup) {
+        sahamAyah = adaKeturunan ? 4 : 0; // 1/6 jika ada keturunan
     }
 
     if (data.jumlahAnakLk == 0 && data.jumlahAnakPr > 0) {
-        double bagian = (data.jumlahAnakPr == 1) ? 0.5 : (2.0/3.0);
-        string status = (data.jumlahAnakPr == 1) ? "Anak Pr Tunggal (1/2)" : to_string(data.jumlahAnakPr) + " Anak Pr (2/3)";
-        double nominal = hartaBersih * bagian;
-        hasil.push_back({status, bagian, nominal, ""});
-        sisaHarta -= nominal;
+        sahamAnakPr = (data.jumlahAnakPr == 1) ? 12 : 16; // 1/2 atau 2/3 dari 24
     }
 
+    int totalSahamTerpakai = sahamSuamiIstri + sahamIbu + sahamAyah + sahamAnakPr;
+    int sahamAsabahAnakLk = 0;
+    int sahamAsabahAnakPr = 0;
+    int sahamAsabahAyah = 0;
+
+    bool adaAsabah = false;
     if (data.jumlahAnakLk > 0) {
-        if(sisaHarta > 0) {
-            double bagianSatuUnit = sisaHarta / (data.jumlahAnakLk * 2 + data.jumlahAnakPr);
-            hasil.push_back({"Anak Laki-laki (Asabah)", 0, bagianSatuUnit * 2 * data.jumlahAnakLk, "Total semua Anak LK"});
-            if (data.jumlahAnakPr > 0) {
-                hasil.push_back({"Anak Perempuan (Asabah)", 0, bagianSatuUnit * data.jumlahAnakPr, "Total semua Anak PR"});
-            }
-            sisaHarta = 0;
-        }
+        adaAsabah = true;
     } else if (data.isAyahHidup && !adaKeturunan) {
-        hasil.push_back({"Ayah (Sisa/Asabah)", 0, sisaHarta, "Mengambil sisa"});
-        sisaHarta = 0;
-    } else if (data.isAyahHidup && data.jumlahAnakLk == 0 && data.jumlahAnakPr > 0) {
-        if (sisaHarta > 0) {
-            hasil.push_back({"Ayah (Sisa Tambahan)", 0, sisaHarta, "Sisa setelah Anak Pr"});
-            sisaHarta = 0;
+        adaAsabah = true;
+    } else if (data.isAyahHidup && data.jumlahAnakPr > 0) {
+        adaAsabah = true;
+    }
+
+    if (totalSahamTerpakai > asalMasalah) {
+        asalMasalah = totalSahamTerpakai; // AUL
+    } else if (totalSahamTerpakai < asalMasalah && !adaAsabah) {
+        asalMasalah = totalSahamTerpakai; // RADD
+    }
+
+    int sahamSisa = asalMasalah - totalSahamTerpakai;
+    if (sahamSisa > 0) {
+        if (data.jumlahAnakLk > 0) {
+            int totalSukuBagianAnak = (data.jumlahAnakLk * 2) + data.jumlahAnakPr;
+            sahamSisa += sahamAnakPr;
+            sahamAnakPr = 0;
+            sahamAsabahAnakLk = (sahamSisa * (data.jumlahAnakLk * 2)) / totalSukuBagianAnak;
+            sahamAsabahAnakPr = (sahamSisa * data.jumlahAnakPr) / totalSukuBagianAnak;
+            sahamSisa = 0;
+        } else if (data.isAyahHidup && !adaKeturunan) {
+            sahamAsabahAyah = sahamSisa;
+            sahamSisa = 0;
+        } else if (data.isAyahHidup && data.jumlahAnakPr > 0) {
+            sahamAsabahAyah = sahamSisa;
+            sahamSisa = 0;
         }
     }
 
-    for (const auto& h : hasil) printCurrency(h.nama, h.nominal);
-    cout << "------------------------------------------" << endl;
-    if (sisaHarta > 1.0) printCurrency("SISA TAK TERBAGI", sisaHarta);
+    double nilaiPerSaham = hartaBersih / asalMasalah;
+    vector<HasilWaris> hasil;
+    double totalTerdistribusi = 0.0;
+
+    if (sahamSuamiIstri > 0) {
+        double total = sahamSuamiIstri * nilaiPerSaham;
+        hasil.push_back({labelPasangan, 1, (double)sahamSuamiIstri, total, total, ""});
+        totalTerdistribusi += total;
+    }
+    if (sahamIbu > 0) {
+        double total = sahamIbu * nilaiPerSaham;
+        hasil.push_back({"Ibu", 1, (double)sahamIbu, total, total, ""});
+        totalTerdistribusi += total;
+    }
+    if (data.isAyahHidup && (sahamAyah > 0 || sahamAsabahAyah > 0)) {
+        int totalSahamAyah = sahamAyah + sahamAsabahAyah;
+        double total = totalSahamAyah * nilaiPerSaham;
+        hasil.push_back({"Ayah", 1, (double)totalSahamAyah, total, total, ""});
+        totalTerdistribusi += total;
+    }
+
+    if (data.jumlahAnakLk > 0 && sahamAsabahAnakLk > 0) {
+        double total = sahamAsabahAnakLk * nilaiPerSaham;
+        double perOrang = total / data.jumlahAnakLk;
+        hasil.push_back({"Anak Laki-laki", data.jumlahAnakLk, (double)sahamAsabahAnakLk, perOrang, total, ""});
+        totalTerdistribusi += total;
+    }
+
+    int totalSahamAnakPr = sahamAnakPr + sahamAsabahAnakPr;
+    if (data.jumlahAnakPr > 0) {
+        double total = totalSahamAnakPr * nilaiPerSaham;
+        double perOrang = data.jumlahAnakPr > 0 ? total / data.jumlahAnakPr : 0.0;
+        hasil.push_back({"Anak Perempuan", data.jumlahAnakPr, (double)totalSahamAnakPr, perOrang, total, ""});
+        totalTerdistribusi += total;
+    }
+
+    cout << "\n=== HASIL PERHITUNGAN AKURAT ===" << endl;
+    for (const auto& h : hasil) {
+        cout << h.nama << " (" << h.jumlahOrang << " orang) -> Total: Rp " << fixed << setprecision(2) << h.nominalTotal;
+        if (h.jumlahOrang > 1) {
+            cout << " | Per Orang: Rp " << fixed << setprecision(2) << h.nominalPerOrang;
+        }
+        cout << " [Saham: " << h.bagianSaham << "/" << asalMasalah << "]" << endl;
+    }
+
+    double sisaUang = hartaBersih - totalTerdistribusi;
+    if (sisaUang > 1.0) {
+        cout << "------------------------------------------" << endl;
+        printCurrency("SISA TAK TERBAGI", sisaUang);
+    }
 }
 
 void tambahKasus() {
@@ -353,4 +412,32 @@ int main() {
     } while (inputPilihan != "0");
 
     return 0;
+}
+
+// Kita bungkus dengan extern "C" agar nama fungsi tidak diacak oleh compiler C++
+extern "C" {
+    
+    // EMSCRIPTEN_KEEPALIVE memastikan fungsi ini tidak dihapus saat optimasi kompilasi
+    EMSCRIPTEN_KEEPALIVE
+    void hitungWarisWasm(double hartaKotor, double hutang, double biayaMakam, 
+                         char jk, int isPasangan, int isAyah, int isIbu, 
+                         int anakLk, int anakPr) {
+        
+        // Memasukkan parameter input dari JS ke struct DataKasus bawaan C++
+        DataKasus d;
+        d.id = 999; // ID dummy untuk Wasm
+        d.namaAlmarhum = "User Web"; // Nama dummy (bisa diatur di JS nanti)
+        d.hartaKotor = hartaKotor;
+        d.hutang = hutang;
+        d.biayaMakam = biayaMakam;
+        d.jenisKelaminMayit = jk;
+        d.isSuamiIstriHidup = isPasangan;
+        d.isAyahHidup = isAyah;
+        d.isIbuHidup = isIbu;
+        d.jumlahAnakLk = anakLk;
+        d.jumlahAnakPr = anakPr;
+
+        // Panggil fungsi hitung bawaan temanmu yang sudah diperbaiki!
+        hitungDanTampilkan(d); 
+    }
 }
