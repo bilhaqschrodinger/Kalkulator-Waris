@@ -1,5 +1,13 @@
-
 let hitungWarisCplusPlus;
+let teksHasilBuffer = "";
+
+if (typeof Module === 'undefined') {
+    Module = {};
+}
+Module.print = function(text) {
+    console.log(text);
+    teksHasilBuffer += text + "\n"; // Menyimpan hasil output dari C++ ke buffer
+};
 
 Module.onRuntimeInitialized = () => {
     // Menghubungkan fungsi C++ ke JavaScript menggunakan cwrap
@@ -26,27 +34,34 @@ jenisKelaminSelect.addEventListener('change', (e) => {
 formWaris.addEventListener('submit', function(e) {
     e.preventDefault(); // Mencegah halaman reload saat submit
 
-    // 1. Pastikan modul Wasm sudah siap digunakan
     if (!hitungWarisCplusPlus) {
         alert("Modul WebAssembly belum siap, harap tunggu sebentar.");
         return;
     }
 
-    // 2. Ambil semua data dari input form HTML
+    // 1. Reset tampungan teks lama sebelum menghitung ulang
+    teksHasilBuffer = "";
+
+    // 2. Ambil data dari form (Sesuai kode kamu sebelumnya)
     const hartaKotor = parseFloat(document.getElementById('hartaKotor').value) || 0;
     const hutang     = parseFloat(document.getElementById('hutang').value) || 0;
     const biayaMakam = parseFloat(document.getElementById('biayaMakam').value) || 0;
-    const jenisKelaminSelect = document.getElementById('jenisKelaminMayit').value; // 'L' atau 'P'
-    const jkChar = jenisKelaminSelect.charCodeAt(0); // Mengubah 'L'/'P' menjadi ASCII code karena C++ menerima char
-
+    const jenisKelaminSelect = document.getElementById('jenisKelaminMayit').value;
+    const jkChar = jenisKelaminSelect.charCodeAt(0);
     const isPasangan = parseInt(document.getElementById('isSuamiIstriHidup').value) || 0;
     const isAyah     = parseInt(document.getElementById('isAyahHidup').value) || 0;
     const isIbu      = parseInt(document.getElementById('isIbuHidup').value) || 0;
     const anakLk     = parseInt(document.getElementById('jumlahAnakLk').value) || 0;
     const anakPr     = parseInt(document.getElementById('jumlahAnakPr').value) || 0;
 
-    console.log("Mengirim data ke WebAssembly C++...");
-
-    // 3. Eksekusi fungsi C++ lewat jembatan Wasm!
+    // 3. Eksekusi fungsi C++ (Proses ini akan otomatis memicu Module.print mengisi teksHasilBuffer)
     hitungWarisCplusPlus(hartaKotor, hutang, biayaMakam, jkChar, isPasangan, isAyah, isIbu, anakLk, anakPr);
+
+    // 4. Tampilkan teks yang terkumpul ke elemen GUI HTML
+    const elemenOutput = document.getElementById('output-wasm');
+    const containerHasil = document.getElementById('section-hasil');
+
+    elemenOutput.textContent = teksHasilBuffer;
+    containerHasil.classList.remove('hidden');
+    containerHasil.scrollIntoView({ behavior: 'smooth' });
 });
